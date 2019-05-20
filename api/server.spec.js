@@ -1,44 +1,98 @@
 const request = require('supertest');
 
-const server = require('./server.js');
+const Server = require('./server.js');
 
-describe('server', () => {
-  it('sets the environment to testing', () => {
-    expect(process.env.DB_ENV).toBe('testing');
-  });
+describe('GET /', () => {
+  it('should return 200', () => {
+      
+      return request(Server)
+          .get('/')
+          .expect(200)
+          
+  })
 
-  // open client, make a request and inspect the response
-  describe('GET /', () => {
-    it('should return 200 OK', () => {
-      // we return the promise
-      return request(server)
-        .get('/')
-        .expect(200);
-    });
+  it('{api:"up"', () => {
+      const message = {api: 'up'};
+          return request(Server)
+              .get('/')
+              .then(res => {
+                  expect(res.body).toEqual(message);
+              })
+  })
+})
 
-    it('using the squad (async/await)', async () => {
-      // use the squad
-      const res = await request(server).get('/');
-      expect(res.status).toBe(200);
-    });
 
-    it('should return JSON using done callback', done => {
-      // using the done callback
-      request(server)
-        .get('/')
-        .then(res => {
-          expect(res.type).toBe('application/json'); // Content-Type
-          done();
-        });
-    });
+describe('Post', () => {
+    it('should return 201', () => {
+        const newAvenger =   {
+            name: 'ironman'// not required
+          };
 
-    it('should return { api: "up" }', () => {
-      const expected = { api: 'up' };
-      return request(server)
-        .get('/')
-        .then(res => {
-          expect(res.body).toEqual(expected);
-        });
-    });
-  });
-});
+        return request(Server)
+          .post('/avengers')
+          .send(newAvenger)
+          .expect(201)
+          .catch(res=>{
+                expect(422)
+          })
+    })
+
+    it('should return 422 when incomplete request', () => {
+        const newAvenger =   {
+            name: '', 
+          };
+
+        return request(Server)
+          .post('/avengers')
+          .send(newAvenger)
+          .then(res => {
+              expect(res.body).toEqual({message: 'error adding avenger'})
+          })
+          .catch(res=>{
+                expect(500)
+          })
+    })
+
+    it('should return 500 when wrong request', () => {
+        const newAvenger =   {
+            title: 'thor' 
+          };
+
+        return request(Server)
+          .post('/avengers')
+          .send(newAvenger)
+          .then(res => {
+              expect(res.body).toEqual({message: 'incomplete avenger request'})
+          })
+    })
+})
+
+describe('delete', () => {
+
+    it('should return 200', () => {
+
+
+        return request(Server)
+          .delete('/avengers')
+          .send({name: 'ironman'})
+          .expect(200)
+          .then(res => {
+              console.log(res.body);
+              expect(res.body).toEqual({message: 'avenger deleted'});
+          })
+    })
+
+
+    it('should return 404', () => {
+
+
+        return request(Server)
+          .delete('/avengers')
+          .send({name: 'black widow'})
+          .expect(404)
+          .then(res => {
+              console.log(res.body);
+              expect(res.body).toEqual({message: 'avenger does not exist'});
+          })
+    })
+})
